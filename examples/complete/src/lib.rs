@@ -12,7 +12,9 @@ static_loader! {
 #[component]
 pub fn App() -> impl IntoView {
     leptos_fluent! {{
-        translations: TRANSLATIONS,
+        translations: {
+            "leptos": TRANSLATIONS,
+        },
         languages: "./locales/languages.json",
         sync_html_tag_lang: true,
         initial_language_from_url: true,
@@ -31,7 +33,7 @@ fn ChildComponent() -> impl IntoView {
     let i18n = i18n();
 
     view! {
-        <p>{move_tr!("select-a-language")}</p>
+        <p>{move || tr!("leptos", "select-a-language")}</p>
         <fieldset>
             <For
                 each=move || i18n.languages
@@ -54,7 +56,12 @@ fn ChildComponent() -> impl IntoView {
             />
 
         </fieldset>
-        <p>{move_tr!("html-tag-lang-is", {"lang" => i18n.language.get().id.to_string()})}</p>
-        <p>{move_tr!("add-es-en-url-param")}</p>
+        <p>
+            {move || {
+                tr!("leptos", "html-tag-lang-is-now", { "lang" => i18n().language.get().id.to_string(), },)
+            }}
+
+        </p>
+        <p>{move || tr!("leptos", "add-es-en-url-param")}</p>
     }
 }

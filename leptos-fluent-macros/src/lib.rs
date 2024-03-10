@@ -15,6 +15,8 @@ use languages::{
 use proc_macro2::TokenStream;
 use quote::quote;
 use std::path::PathBuf;
+use std::collections::HashMap;
+use std::borrow::Cow;
 use syn::{
     braced,
     parse::{Parse, ParseStream},
@@ -83,9 +85,35 @@ fn parse_litbool_or_expr_param(
     }
 }
 
+struct Translations {
+    data: HashMap<syn::LitStr, syn::Ident>,
+}
+
+impl Parse for Translations {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let fields;
+        braced!(fields in input);
+
+        let mut data = HashMap::new();
+        while !fields.is_empty() {
+            let ns = fields.parse::<syn::LitStr>()?;
+            fields.parse::<syn::Token![:]>()?;
+            let loader = fields.parse::<syn::Ident>()?;
+            if fields.parse::<syn::Token![,]>().is_ok() {
+                break;
+            }
+            data.insert(ns, loader);
+        }
+
+        Ok(Self {
+            data
+        })
+    }
+}
+
 struct I18nLoader {
     languages: Vec<(String, String)>,
-    translations_ident: syn::Ident,
+    translations: Option<Translations>,
     sync_html_tag_lang_bool: Option<syn::LitBool>,
     sync_html_tag_lang_expr: Option<syn::Expr>,
     initial_language_from_url_bool: Option<syn::LitBool>,
@@ -111,7 +139,7 @@ impl Parse for I18nLoader {
         let fields;
         braced!(fields in input);
         let mut locales_path: Option<syn::LitStr> = None;
-        let mut translations_identifier: Option<syn::Ident> = None;
+        let mut translations: Option<Translations> = None;
         let mut languages_path: Option<syn::LitStr> = None;
         let mut sync_html_tag_lang_bool: Option<syn::LitBool> = None;
         let mut sync_html_tag_lang_expr: Option<syn::Expr> = None;
@@ -140,7 +168,7 @@ impl Parse for I18nLoader {
             fields.parse::<syn::Token![:]>()?;
 
             if k == "translations" {
-                translations_identifier = Some(fields.parse()?);
+                translations = Some(fields.parse()?);
             } else if k == "locales" {
                 locales_path = Some(fields.parse()?);
             } else if k == "languages" {
@@ -222,9 +250,9 @@ impl Parse for I18nLoader {
         }
 
         // translations
-        let translations_ident = translations_identifier.ok_or_else(|| {
-            syn::Error::new(input.span(), "Missing `translations` field")
-        })?;
+        if translations.is_none() {
+            return Err(syn::Error::new(input.span(), "Missing `translations` field"));
+        }
 
         // languages
         if languages_path.is_none() && locales_path.is_none() {
@@ -279,7 +307,7 @@ impl Parse for I18nLoader {
         }
 
         Ok(Self {
-            translations_ident,
+            translations,
             languages: match languages_file {
                 Some(languages_file) => read_languages_file(&languages_file),
                 None => read_locales_folder(&locales_folder.unwrap()),
@@ -392,7 +420,7 @@ pub fn leptos_fluent(
 ) -> proc_macro::TokenStream {
     #[cfg_attr(feature = "ssr", allow(unused_variables))]
     let I18nLoader {
-        translations_ident,
+        translations,
         languages,
         sync_html_tag_lang_bool,
         sync_html_tag_lang_expr,
@@ -636,13 +664,33 @@ pub fn leptos_fluent(
         });
     };
 
+    let translations = {
+        match translations {
+            Some(translations) => {
+                let append_translations = translations.data
+                    .into_iter()
+                    .map(|(ns, ident)| quote! { tls.insert(#ns, ::once_cell::sync::Lazy::new(|| #ident)) })
+                    .collect::<Vec<proc_macro2::TokenStream>>();
+
+                quote! {
+                    {
+                        let mut tls = ::std::rc::Rc::new(::std::collections::HashMap::<::std::borrow::Cow<'static, str>, ::once_cell::sync::Lazy<::fluent_templates::StaticLoader>>::default());
+                        #(#append_translations);*
+                        tls
+                    }
+                }
+            },
+            None => quote! {},
+        }
+    };
+
     let quote = quote! {
         {
             const LANGUAGES: [&::leptos_fluent::Language; #n_languages] = #languages_quote;
             let i18n = ::leptos_fluent::I18n {
                 language: ::leptos::create_rw_signal(LANGUAGES[0]),
                 languages: &LANGUAGES,
-                translations: &#translations_ident,
+                translations: #translations,
                 localstorage_key: #localstorage_key,
             };
             provide_context::<::leptos_fluent::I18n>(i18n);

@@ -12,7 +12,9 @@ static_loader! {
 #[component]
 pub fn App() -> impl IntoView {
     leptos_fluent! {{
-        translations: TRANSLATIONS,
+        translations: {
+            "leptos": TRANSLATIONS,
+        },
         locales: "./locales",
     }};
 
@@ -24,7 +26,7 @@ fn ChildComponent() -> impl IntoView {
     let i18n = i18n();
 
     view! {
-        <p>{move_tr!("select-a-language")}</p>
+        <p>{move || tr!("leptos", "select-a-language")}</p>
         <fieldset>
             <For
                 each=move || i18n.languages

@@ -146,6 +146,8 @@ use leptos::{use_context, RwSignal, SignalGet, SignalSet};
 pub use leptos_fluent_macros::leptos_fluent;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::borrow::Cow;
 
 /// Each language supported by your application.
 #[derive(Clone, Debug)]
@@ -181,7 +183,7 @@ pub struct I18n {
     pub language: RwSignal<&'static Language>,
     /// Available languages for the application
     pub languages: &'static [&'static Language],
-    pub translations: &'static Lazy<StaticLoader>,
+    pub translations: Rc<HashMap<Cow<'static, str>, Lazy<StaticLoader>>>,
     pub localstorage_key: &'static str,
 }
 
@@ -191,11 +193,20 @@ impl I18n {
     /// ```rust,ignore
     /// use leptos_fluent::i18n;
     ///
-    /// i18n().tr("hello-world")
+    /// i18n().tr("ns-err", "hello-world")
     /// ```
-    pub fn tr(&self, text_id: &str) -> String {
+    pub fn tr(&self, ns: &str, text_id: &str) -> String {
         let lang_id = &self.language.get().id;
-        self.translations.lookup(lang_id, text_id)
+        let tl = self.translations.get(ns);
+        tl
+            .unwrap_or_else(|| panic!("Namespace '{}' not found", ns))
+            .try_lookup(lang_id, text_id)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Translation for '{}' not found in locale '{}'",
+                    text_id, lang_id
+                )
+            })
     }
 
     /// Translate a text identifier to the current language with arguments.
@@ -213,11 +224,21 @@ impl I18n {
     /// ```
     pub fn trs(
         &self,
+        ns: &str,
         text_id: &str,
         args: &HashMap<String, FluentValue<'_>>,
     ) -> String {
         let lang_id = &self.language.get().id;
-        self.translations.lookup_with_args(lang_id, text_id, args)
+        let tl = self.translations.get(ns);
+        tl
+            .unwrap_or_else(|| panic!("Namespace '{}' not found", ns))
+            .try_lookup_with_args(lang_id, text_id, args)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Translation for '{}' not found in locale '{}'",
+                    text_id, lang_id
+                )
+            })
     }
 
     /// Get the default language.
@@ -279,11 +300,11 @@ pub fn i18n() -> I18n {
 /// ```
 #[macro_export]
 macro_rules! tr {
-    ($text_id:expr$(,)?) => {
-        $crate::i18n().tr($text_id)
+    ($ns:expr, $text_id:expr$(,)?) => {
+        $crate::i18n().tr($ns, $text_id)
     };
-    ($text_id:expr, {$($key:expr => $value:expr),*$(,)?}$(,)?) => {
-        $crate::i18n().trs($text_id, &{
+    ($ns:expr, $text_id:expr, {$($key:expr => $value:expr),*$(,)?}$(,)?) => {
+        $crate::i18n().trs($ns, $text_id, &{
             let mut map = ::std::collections::HashMap::new();
             $(
                 map.insert($key.to_string(), $value.into());
@@ -303,11 +324,11 @@ macro_rules! tr {
 /// [`leptos::Signal`]: https://docs.rs/leptos/latest/leptos/struct.Signal.html
 #[macro_export]
 macro_rules! move_tr {
-    ($text_id:expr$(,)?) => {
-        ::leptos::Signal::derive(move || $crate::tr!($text_id))
+    ($ns:expr, $text_id:expr$(,)?) => {
+        ::leptos::Signal::derive(move || $crate::tr!($ns, $text_id))
     };
-    ($text_id:expr, {$($key:expr => $value:expr),*$(,)?}$(,)?) => {
-        ::leptos::Signal::derive(move || $crate::tr!($text_id, {
+    ($ns:expr, $text_id:expr, {$($key:expr => $value:expr),*$(,)?}$(,)?) => {
+        ::leptos::Signal::derive(move || $crate::tr!($ns, $text_id, {
             $(
                 $key => $value,
             )*

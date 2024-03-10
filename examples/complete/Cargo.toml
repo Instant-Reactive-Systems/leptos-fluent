@@ -13,6 +13,7 @@ leptos-fluent = { path = "../../leptos-fluent", features = ["csr"] }
 fluent-templates = "0.9"
 console_error_panic_hook = "0"
 web-sys = "0"
+once_cell = "1"
 
 [[bin]]
 name = "main"
