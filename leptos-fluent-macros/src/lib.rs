@@ -674,9 +674,10 @@ pub fn leptos_fluent(
 
                 quote! {
                     {
-                        let mut tls = ::std::rc::Rc::new(::std::collections::HashMap::<::std::borrow::Cow<'static, str>, ::once_cell::sync::Lazy<::fluent_templates::StaticLoader>>::default());
+                        let mut tls = Default::default();
                         #(#append_translations);*
-                        tls
+                        let (read, _) = ::leptos::create_signal(tls);
+                        read
                     }
                 }
             },

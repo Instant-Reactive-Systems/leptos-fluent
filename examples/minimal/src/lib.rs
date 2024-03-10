@@ -26,7 +26,7 @@ fn ChildComponent() -> impl IntoView {
     let i18n = i18n();
 
     view! {
-        <p>{move || tr!("leptos", "select-a-language")}</p>
+        <p>{move_tr!("leptos", "select-a-language")}</p>
         <fieldset>
             <For
                 each=move || i18n.languages

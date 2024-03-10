@@ -33,7 +33,7 @@ fn ChildComponent() -> impl IntoView {
     let i18n = i18n();
 
     view! {
-        <p>{move || tr!("leptos", "select-a-language")}</p>
+        <p>{move_tr!("leptos", "select-a-language")}</p>
         <fieldset>
             <For
                 each=move || i18n.languages
@@ -57,11 +57,8 @@ fn ChildComponent() -> impl IntoView {
 
         </fieldset>
         <p>
-            {move || {
-                tr!("leptos", "html-tag-lang-is-now", { "lang" => i18n().language.get().id.to_string(), },)
-            }}
-
+            {move_tr!("leptos", "html-tag-lang-is-now", { "lang" => i18n.language.get().id.to_string() })}
         </p>
-        <p>{move || tr!("leptos", "add-es-en-url-param")}</p>
+        <p>{move_tr!("leptos", "add-es-en-url-param")}</p>
     }
 }

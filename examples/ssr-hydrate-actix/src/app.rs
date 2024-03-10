@@ -15,7 +15,9 @@ static_loader! {
 pub fn App() -> impl IntoView {
     provide_meta_context();
     leptos_fluent! {{
-        translations: TRANSLATIONS,
+        translations: {
+            "leptos": TRANSLATIONS,
+        },
         locales: "./locales",
         sync_html_tag_lang: true,
         initial_language_from_url: true,
@@ -46,7 +48,7 @@ fn HomePage() -> impl IntoView {
     let i18n = i18n();
 
     view! {
-        <h1>{move_tr!("welcome-to-leptos")}</h1>
+        <h1>{move_tr!("leptos", "welcome-to-leptos")}</h1>
         <fieldset>
             <For
                 each=move || i18n.languages
@@ -89,6 +91,6 @@ fn NotFound() -> impl IntoView {
     }
 
     view! {
-        <h1>{move_tr!("not-found")}</h1>
+        <h1>{move_tr!("leptos", "not-found")}</h1>
     }
 }

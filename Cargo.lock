@@ -1347,6 +1347,7 @@ dependencies = [
  "fluent-templates",
  "leptos",
  "leptos-fluent",
+ "once_cell",
  "web-sys",
 ]
 
@@ -1370,6 +1371,7 @@ dependencies = [
  "fluent-templates",
  "leptos",
  "leptos-fluent",
+ "once_cell",
 ]
 
 [[package]]
