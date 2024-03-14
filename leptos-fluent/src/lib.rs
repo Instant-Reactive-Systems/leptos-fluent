@@ -339,3 +339,37 @@ macro_rules! move_tr {
         }))
     };
 }
+
+/// Translate a text identifier to the current language.
+///
+/// ```rust,ignore
+/// dyn_tr!("hello-world")
+/// dyn_tr!("hello-world", &args)
+/// ```
+#[macro_export]
+macro_rules! dyn_tr {
+    ($ns:expr, $text_id:expr$(,)?) => {
+        $crate::i18n().tr($ns, $text_id)
+    };
+    ($ns:expr, $text_id:expr, $args:expr$(,)?) => {
+        $crate::i18n().trs($ns, $text_id, $args)
+    }
+}
+
+/// [`leptos::Signal`] that translates a text identifier to the current language.
+///
+/// ```rust,ignore
+/// move_dyn_tr!("hello-world")
+/// move_dyn_tr!("hello-world", &args)
+/// ```
+///
+/// [`leptos::Signal`]: https://docs.rs/leptos/latest/leptos/struct.Signal.html
+#[macro_export]
+macro_rules! move_dyn_tr {
+    ($ns:expr, $text_id:expr$(,)?) => {
+        ::leptos::Signal::derive(move || $crate::dyn_tr!($ns, $text_id))
+    };
+    ($ns:expr, $text_id:expr, $args:expr$(,)?) => {
+        ::leptos::Signal::derive(move || $crate::dyn_tr!($ns, $text_id, $args))
+    }
+}
