@@ -86,7 +86,7 @@ fn parse_litbool_or_expr_param(
 }
 
 struct Translations {
-    data: HashMap<syn::LitStr, Vec<syn::Ident>>,
+    data: HashMap<syn::LitStr, Vec<syn::Path>>,
 }
 
 impl Parse for Translations {
@@ -105,7 +105,7 @@ impl Parse for Translations {
             let list;
             bracketed!(list in fields);
             while !list.is_empty() {
-                let loader = list.parse::<syn::Ident>()?;
+                let loader = list.parse::<syn::Path>()?;
                 _ = list.parse::<syn::Token![,]>();
                 loaders.push(loader);
             }

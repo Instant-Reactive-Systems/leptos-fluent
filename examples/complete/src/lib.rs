@@ -9,17 +9,21 @@ static_loader! {
     };
 }
 
-static_loader! {
-    static TRANSLATIONS_B = {
-        locales: "./locales",
-        fallback_language: "en",
-    };
+mod epic {
+    use fluent_templates::static_loader;
+    static_loader! {
+        pub static TRANSLATIONS_B = {
+            locales: "./locales",
+            fallback_language: "en",
+        };
+    }
 }
+
 #[component]
 pub fn App() -> impl IntoView {
     leptos_fluent! {{
         translations: {
-            "leptos": [TRANSLATIONS_A, TRANSLATIONS_B],
+            "leptos": [TRANSLATIONS_A, epic::TRANSLATIONS_B],
         },
         languages: "./locales/languages.json",
         sync_html_tag_lang: true,
