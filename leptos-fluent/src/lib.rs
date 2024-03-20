@@ -195,10 +195,11 @@ impl I18n {
     ///
     /// i18n().tr("ns-err", "hello-world")
     /// ```
-    pub fn tr(&self, ns: &str, text_id: &str) -> String {
+    pub fn tr(&self, ns: impl Into<Cow<'static, str>>, text_id: &str) -> String {
         let lang_id = &self.language.get().id;
         self.translations.with(move |translations| {
-            let tls = translations.get(ns).unwrap_or_else(|| panic!("Namespace '{}' not found", ns));
+            let ns = ns.into();
+            let tls = translations.get(&ns).unwrap_or_else(|| panic!("Namespace '{}' not found", ns));
             for tl in tls {
                 if let Some(text) = tl.try_lookup(lang_id, text_id) {
                     return text;
@@ -225,13 +226,14 @@ impl I18n {
     /// ```
     pub fn trs(
         &self,
-        ns: &str,
+        ns: impl Into<Cow<'static, str>>,
         text_id: &str,
         args: &HashMap<String, FluentValue<'_>>,
     ) -> String {
         let lang_id = &self.language.get().id;
         self.translations.with(move |translations| {
-            let tls = translations.get(ns).unwrap_or_else(|| panic!("Namespace '{}' not found", ns));
+            let ns = ns.into();
+            let tls = translations.get(&ns).unwrap_or_else(|| panic!("Namespace '{}' not found", ns));
             for tl in tls {
                 if let Some(text) = tl.try_lookup_with_args(lang_id, text_id, args) {
                     return text;
