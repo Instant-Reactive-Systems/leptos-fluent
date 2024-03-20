@@ -13,7 +13,7 @@ static_loader! {
 pub fn App() -> impl IntoView {
     leptos_fluent! {{
         translations: {
-            "leptos": TRANSLATIONS,
+            "leptos": [TRANSLATIONS],
         },
         locales: "./locales",
     }};

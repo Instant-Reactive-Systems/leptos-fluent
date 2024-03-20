@@ -183,7 +183,7 @@ pub struct I18n {
     pub language: RwSignal<&'static Language>,
     /// Available languages for the application
     pub languages: &'static [&'static Language],
-    pub translations: ReadSignal<HashMap<Cow<'static, str>, Lazy<StaticLoader>>>,
+    pub translations: ReadSignal<HashMap<Cow<'static, str>, Vec<&'static Lazy<StaticLoader>>>>,
     pub localstorage_key: &'static str,
 }
 
@@ -198,16 +198,15 @@ impl I18n {
     pub fn tr(&self, ns: &str, text_id: &str) -> String {
         let lang_id = &self.language.get().id;
         self.translations.with(move |translations| {
-            let tl = translations.get(ns);
-            tl
-                .unwrap_or_else(|| panic!("Namespace '{}' not found", ns))
-                .try_lookup(lang_id, text_id)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "Translation for '{}' not found in locale '{}'",
-                        text_id, lang_id
-                    )
-                })
+            let tls = translations.get(ns).unwrap_or_else(|| panic!("Namespace '{}' not found", ns));
+            for tl in tls {
+                if let Some(text) = tl.try_lookup(lang_id, text_id) {
+                    return text;
+                }
+            }
+
+            // no locale unit found in any of the translations
+            panic!("Translation for '{}' not found in locale '{}'", text_id, lang_id)
         })
     }
 
@@ -232,16 +231,15 @@ impl I18n {
     ) -> String {
         let lang_id = &self.language.get().id;
         self.translations.with(move |translations| {
-            let tl = translations.get(ns);
-            tl
-                .unwrap_or_else(|| panic!("Namespace '{}' not found", ns))
-                .try_lookup_with_args(lang_id, text_id, args)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "Translation for '{}' not found in locale '{}'",
-                        text_id, lang_id
-                    )
-                })
+            let tls = translations.get(ns).unwrap_or_else(|| panic!("Namespace '{}' not found", ns));
+            for tl in tls {
+                if let Some(text) = tl.try_lookup_with_args(lang_id, text_id, args) {
+                    return text;
+                }
+            }
+
+            // no locale unit found in any of the translations
+            panic!("Translation for '{}' not found in locale '{}'", text_id, lang_id)
         })
     }
 

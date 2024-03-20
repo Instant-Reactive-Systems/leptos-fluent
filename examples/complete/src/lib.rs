@@ -3,17 +3,23 @@ use leptos::*;
 use leptos_fluent::{i18n, leptos_fluent, move_tr, Language};
 
 static_loader! {
-    static TRANSLATIONS = {
+    static TRANSLATIONS_A = {
         locales: "./locales",
         fallback_language: "en",
     };
 }
 
+static_loader! {
+    static TRANSLATIONS_B = {
+        locales: "./locales",
+        fallback_language: "en",
+    };
+}
 #[component]
 pub fn App() -> impl IntoView {
     leptos_fluent! {{
         translations: {
-            "leptos": TRANSLATIONS,
+            "leptos": [TRANSLATIONS_A, TRANSLATIONS_B],
         },
         languages: "./locales/languages.json",
         sync_html_tag_lang: true,

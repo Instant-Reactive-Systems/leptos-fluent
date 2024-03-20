@@ -1388,6 +1388,7 @@ dependencies = [
  "leptos_actix",
  "leptos_meta",
  "leptos_router",
+ "once_cell",
  "wasm-bindgen",
 ]
 

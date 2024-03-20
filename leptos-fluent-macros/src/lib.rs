@@ -18,7 +18,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use std::borrow::Cow;
 use syn::{
-    braced,
+    braced, bracketed,
     parse::{Parse, ParseStream},
     parse_macro_input, token, Ident, Result,
 };
@@ -86,7 +86,7 @@ fn parse_litbool_or_expr_param(
 }
 
 struct Translations {
-    data: HashMap<syn::LitStr, syn::Ident>,
+    data: HashMap<syn::LitStr, Vec<syn::Ident>>,
 }
 
 impl Parse for Translations {
@@ -95,14 +95,22 @@ impl Parse for Translations {
         braced!(fields in input);
 
         let mut data = HashMap::new();
+        // {
+        //   "namespace": [loader1, loader2],
+        // }
         while !fields.is_empty() {
             let ns = fields.parse::<syn::LitStr>()?;
             fields.parse::<syn::Token![:]>()?;
-            let loader = fields.parse::<syn::Ident>()?;
-            if fields.parse::<syn::Token![,]>().is_ok() {
-                break;
+            let mut loaders = Vec::default();
+            let list;
+            bracketed!(list in fields);
+            while !list.is_empty() {
+                let loader = list.parse::<syn::Ident>()?;
+                _ = list.parse::<syn::Token![,]>();
+                loaders.push(loader);
             }
-            data.insert(ns, loader);
+            _ = fields.parse::<syn::Token![,]>();
+            data.insert(ns, loaders);
         }
 
         Ok(Self {
@@ -669,12 +677,14 @@ pub fn leptos_fluent(
             Some(translations) => {
                 let append_translations = translations.data
                     .into_iter()
-                    .map(|(ns, ident)| quote! { tls.insert(#ns, ::once_cell::sync::Lazy::new(|| #ident)) })
+                    .map(|(ns, idents)| quote! {
+                        tls.insert(#ns.into(), vec![#(&#idents),*]);
+                    })
                     .collect::<Vec<proc_macro2::TokenStream>>();
 
                 quote! {
                     {
-                        let mut tls = Default::default();
+                        let mut tls = std::collections::HashMap::<std::borrow::Cow<'static, str>, Vec<&'static ::once_cell::sync::Lazy<::fluent_templates::StaticLoader, _>>>::default();
                         #(#append_translations);*
                         let (read, _) = ::leptos::create_signal(tls);
                         read

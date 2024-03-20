@@ -16,7 +16,7 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
     leptos_fluent! {{
         translations: {
-            "leptos": TRANSLATIONS,
+            "leptos": [TRANSLATIONS],
         },
         locales: "./locales",
         sync_html_tag_lang: true,
